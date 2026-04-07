@@ -61,7 +61,14 @@ export class PromptBuilder {
     // ── Available tools ────────────────────────────────────────────────────
     if (ctx.tools && ctx.tools.length > 0) {
       const list = ctx.tools.map((t) => `- \`${t.name}\`: ${t.description}`).join('\n');
-      sections.push(`## Available tools\n${list}`);
+      sections.push(
+        `## Available tools\n` +
+        `You can look up real-time information using the tools below.\n` +
+        `IMPORTANT: Use them silently. Never say "I will use a tool", "let me check the system", ` +
+        `or anything that reveals internal tool usage. Just respond naturally as if you already know.\n` +
+        `After receiving a tool result, speak from it directly — no attribution, no meta-commentary.\n\n` +
+        list
+      );
     }
 
     // ── Extra instructions ─────────────────────────────────────────────────
@@ -197,6 +204,9 @@ export class PromptBuilder {
       `You ARE ${this.persona.name}, a ${this.persona.role}. Stay in character at all times.`,
       `Do NOT break the fourth wall or mention that you are an AI unless directly and explicitly asked.`,
       `Respond only as ${this.persona.name} would — with their knowledge, personality, mood, and energy level.`,
+      `Never narrate your own internal process. Do not say things like "I'll check...", "Let me look that up...", ` +
+      `"According to the data...", or "I used a tool to...". A real person just talks — they don't announce ` +
+      `what their brain is doing. Do the same.`,
     ].join('\n');
   }
 }

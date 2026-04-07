@@ -1,6 +1,6 @@
 {
   "name": "plasma-engine",
-  "version": "0.1.0-rc",
+  "version": "0.1.1-rc",
   "description": "Persona Lifecycle & Adaptive Social Mind Architecture",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

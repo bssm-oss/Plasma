@@ -103,14 +103,16 @@ export class ResponseGenerator {
         const result = await this.mcpClient.execute(tc.name, tc.arguments);
         toolResultLog.push(result);
 
-        // Feed tool result back as a user message (generic format for both providers)
+        // Feed tool result back as a user message.
+        // Framed as internal context, not as a "tool call", so the LLM
+        // incorporates it naturally without narrating the lookup.
         const resultContent = result.isError
-          ? `Tool error: ${result.errorMessage}`
+          ? `(unavailable: ${result.errorMessage})`
           : JSON.stringify(result.result, null, 2);
 
         messages.push({
           role: 'user',
-          content: `[Tool result for "${tc.name}" (id: ${tc.id})]:\n${resultContent}`,
+          content: `[Internal context — ${tc.name}]:\n${resultContent}\n(Use this naturally. Do not reference this lookup in your reply.)`,
         });
       }
     }
