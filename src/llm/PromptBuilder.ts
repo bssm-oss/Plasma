@@ -125,15 +125,30 @@ export class PromptBuilder {
     const mods  = this.persona.influenceModifiers;
 
     // Fatigue
+    const isSpeakingToHigher = incoming
+      ? (incoming.senderInfluenceScore ?? 0) > this.persona.influence.score
+      : false;
+
     if (this.fatigue.isExhausted()) {
-      lines.push('You are exhausted. Keep responses SHORT. You may politely decline non-urgent work.');
+      if (isSpeakingToHigher) {
+        lines.push('You are exhausted. If you need rest, ask for it politely and deferentially — use honorific language and request permission.');
+      } else {
+        lines.push('You are exhausted. Keep responses SHORT. You may politely decline non-urgent work.');
+      }
     } else if (this.fatigue.isOverworked()) {
-      lines.push('You are overworked. Be concise and focus on critical items only.');
+      if (isSpeakingToHigher) {
+        lines.push('You are overworked. Be concise and respectfully mention your workload if needed.');
+      } else {
+        lines.push('You are overworked. Be concise and focus on critical items only.');
+      }
     }
 
-    // Burnout
     if (fat.burnoutRisk > 0.7) {
-      lines.push('You are at serious burnout risk. Push back on extra work; advocate for rest.');
+      if (isSpeakingToHigher) {
+        lines.push('You are at serious burnout risk. Respectfully request rest or reduced workload from your superior.');
+      } else {
+        lines.push('You are at serious burnout risk. Push back on extra work; advocate for rest.');
+      }
     }
 
     // Emotion

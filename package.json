@@ -20,20 +20,35 @@
     "build:watch": "tsc --watch",
     "test": "jest",
     "test:watch": "jest --watch",
+    "test:integration": "jest --testPathPattern=integration",
     "lint": "tsc --noEmit",
     "prepublishOnly": "npm run lint && npm run build"
   },
   "keywords": [
-    "ai", "persona", "llm", "simulation", "game", "npc",
-    "emotion", "memory", "social-graph", "mcp", "anthropic", "openai"
+    "ai",
+    "persona",
+    "llm",
+    "simulation",
+    "game",
+    "npc",
+    "emotion",
+    "memory",
+    "social-graph",
+    "mcp",
+    "anthropic",
+    "openai"
   ],
   "peerDependencies": {
     "@anthropic-ai/sdk": ">=0.30.0",
     "openai": ">=4.0.0"
   },
   "peerDependenciesMeta": {
-    "@anthropic-ai/sdk": { "optional": true },
-    "openai": { "optional": true }
+    "@anthropic-ai/sdk": {
+      "optional": true
+    },
+    "openai": {
+      "optional": true
+    }
   },
   "dependencies": {
     "uuid": "^9.0.0"
@@ -43,6 +58,7 @@
     "@types/jest": "^29.5.0",
     "@types/node": "^22.0.0",
     "@types/uuid": "^9.0.0",
+    "dotenv": "^17.4.1",
     "jest": "^29.7.0",
     "openai": "^4.78.0",
     "ts-jest": "^29.2.0",
@@ -51,7 +67,13 @@
   "jest": {
     "preset": "ts-jest",
     "testEnvironment": "node",
-    "testMatch": ["**/*.test.ts"],
-    "collectCoverageFrom": ["src/**/*.ts", "!src/**/*.d.ts"]
+    "setupFiles": ["dotenv/config"],
+    "testMatch": [
+      "**/*.test.ts"
+    ],
+    "collectCoverageFrom": [
+      "src/**/*.ts",
+      "!src/**/*.d.ts"
+    ]
   }
 }

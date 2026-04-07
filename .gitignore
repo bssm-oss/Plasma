@@ -4,4 +4,5 @@ dist/
 *.d.ts.map
 .env
 .env.local
+integration-test.log
 coverage/

@@ -62,7 +62,7 @@ export class MemoryCore {
 
     const scored = this.entries.map((entry) => {
       const entryTokens = tokenise(entry.content + ' ' + entry.tags.join(' '));
-      const overlap = queryTokens.filter((t) => entryTokens.has(t)).length;
+      const overlap = [...queryTokens].filter((t) => entryTokens.has(t)).length;
       const keywordScore = queryTokens.size > 0 ? overlap / queryTokens.size : 0;
       const ageHours = (now - entry.timestamp) / 3_600_000;
       const recencyScore = Math.exp(-ageHours / 48); // half-life ~2 game-days

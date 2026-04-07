@@ -10,6 +10,7 @@ const EVENT_DELTAS: Record<
   praised:            { valence:  0.20, arousal:  0.10, stress: -0.10, confidence:  0.15, motivation:  0.15 },
   criticized:         { valence: -0.15, arousal:  0.05, stress:  0.15, confidence: -0.10, motivation: -0.05 },
   promoted:           { valence:  0.30, arousal:  0.20, stress: -0.10, confidence:  0.25, motivation:  0.30 },
+  demoted:            { valence: -0.30, arousal:  0.15, stress:  0.25, confidence: -0.25, motivation: -0.25 },
   deadline_missed:    { valence: -0.25, arousal:  0.10, stress:  0.30, confidence: -0.20, motivation: -0.15 },
   conflict:           { valence: -0.20, arousal:  0.20, stress:  0.25, confidence: -0.05, motivation: -0.10 },
   resolved_conflict:  { valence:  0.15, arousal: -0.10, stress: -0.20, confidence:  0.10, motivation:  0.10 },
