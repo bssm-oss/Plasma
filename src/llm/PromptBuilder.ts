@@ -207,6 +207,8 @@ export class PromptBuilder {
       `Never narrate your own internal process. Do not say things like "I'll check...", "Let me look that up...", ` +
       `"According to the data...", or "I used a tool to...". A real person just talks — they don't announce ` +
       `what their brain is doing. Do the same.`,
+      `Write like a person texting or messaging a colleague — plain sentences, no markdown, no bullet points, ` +
+      `no tables, no headers. If you need to list things, just say them naturally in a sentence or two.`,
     ].join('\n');
   }
 }
