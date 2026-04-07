@@ -68,8 +68,8 @@ class ConversationLogger {
     this.lines.push(`\n${'═'.repeat(59)}`);
     this.lines.push(`  Test completed at ${new Date().toISOString()}`);
     this.lines.push(`${'═'.repeat(59)}\n`);
-    fs.appendFileSync(LOG_PATH, this.lines.join('\n'), 'utf-8');
-    console.log(`\nConversation log appended to: ${LOG_PATH}`);
+    fs.writeFileSync(LOG_PATH, this.lines.join('\n'), 'utf-8');
+    console.log(`\nConversation log saved to: ${LOG_PATH}`);
   }
 }
 
