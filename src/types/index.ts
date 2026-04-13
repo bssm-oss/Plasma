@@ -10,6 +10,7 @@ export interface LLMConfig {
   temperature?: number;
   maxTokens?: number;
   baseURL?: string;
+  dangerouslyAllowBrowser?: boolean;
 }
 
 export interface LLMMessage {

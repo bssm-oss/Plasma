@@ -16,6 +16,7 @@ export class OpenAIProvider extends LLMProvider {
     this.client = new OpenAI({
       apiKey: config.apiKey,
       baseURL: config.baseURL,
+      ...(config.dangerouslyAllowBrowser ? { dangerouslyAllowBrowser: true } : {}),
     });
   }
 
