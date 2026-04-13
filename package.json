@@ -1,11 +1,13 @@
 {
   "name": "plasma-engine",
-  "version": "0.1.2-beta",
+  "version": "0.1.2-rc",
   "description": "Persona Lifecycle & Adaptive Social Mind Architecture",
   "main": "dist/index.js",
+  "module": "dist/esm/index.js",
   "types": "dist/index.d.ts",
   "exports": {
     ".": {
+      "import": "./dist/esm/index.js",
       "require": "./dist/index.js",
       "types": "./dist/index.d.ts"
     }
@@ -17,7 +19,7 @@
     "README.md"
   ],
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && tsc -p tsconfig.esm.json",
     "build:watch": "tsc --watch",
     "test": "jest",
     "test:watch": "jest --watch",
