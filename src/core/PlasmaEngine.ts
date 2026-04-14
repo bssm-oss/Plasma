@@ -118,13 +118,47 @@ export class PlasmaEngine extends TypedEventEmitter<PlasmaEventMap> {
   routeMessage(message: Message): EngagementDecision {
     const conv = this.conversations.addMessage(message);
 
-    // Auto-record a lightweight interaction for every message from a known/unknown sender
     if (message.senderId !== this.persona.id) {
       this.persona.graph.recordInteraction(message.senderId, message.senderName, {
         type: message.isDirectMessage ? 'direct_message' : 'message',
         intensity: 0.2,
         timestamp: message.timestamp,
       });
+    }
+
+    if (this.conversations.isPlasmaResponding(message.conversationId, this.persona.id)) {
+      const decision: EngagementDecision = {
+        action: 'SKIP',
+        score: { relevance: 0, social: 0, energy: 0, relationship: 0, addressContext: 0, urgency: 0, influenceModifier: 1, total: 0 },
+        shouldDelay: false,
+        delayMs: 0,
+        reasoning: 'Already generating a response',
+      };
+      this.emit('engagement:decided', decision);
+      return decision;
+    }
+
+    const endCheck = this.conversations.shouldEndConversation(message.conversationId);
+    if (endCheck.shouldEnd) {
+      const decision: EngagementDecision = {
+        action: 'SKIP',
+        score: { relevance: 0, social: 0, energy: 0, relationship: 0, addressContext: 0, urgency: 0, influenceModifier: 1, total: 0 },
+        shouldDelay: false,
+        delayMs: 0,
+        reasoning: endCheck.reason,
+      };
+      this.emit('engagement:decided', decision);
+      return decision;
+    }
+
+    if (this.conversations.hasOtherPlasmaResponding(message.conversationId, this.persona.id)) {
+      const decision = this.router.decide(message, conv);
+      if (decision.action === 'CAN_RESPOND' || decision.action === 'SHOULD_RESPOND') {
+        decision.action = 'SKIP';
+        decision.reasoning = 'Another plasma is already responding';
+      }
+      this.emit('engagement:decided', decision);
+      return decision;
     }
 
     const decision = this.router.decide(message, conv);
@@ -145,7 +179,25 @@ export class PlasmaEngine extends TypedEventEmitter<PlasmaEventMap> {
   ): Promise<string> {
     let conv = this.conversations.getConversation(message.conversationId);
     if (!conv) conv = this.conversations.addMessage(message);
-    return this.generateAndRecord(message, conv, options);
+
+    if (this.conversations.isPlasmaResponding(message.conversationId, this.persona.id)) {
+      this.log.debug('Already responding — skipping duplicate');
+      return '';
+    }
+
+    const endCheck = this.conversations.shouldEndConversation(message.conversationId);
+    if (endCheck.shouldEnd) {
+      this.log.debug(`Conversation ended: ${endCheck.reason}`);
+      this.conversations.endConversation(message.conversationId);
+      return '';
+    }
+
+    this.conversations.markResponding(message.conversationId, this.persona.id);
+    try {
+      return await this.generateAndRecord(message, conv, options);
+    } finally {
+      this.conversations.markResponseDone(message.conversationId, this.persona.id);
+    }
   }
 
   private async generateAndRecord(

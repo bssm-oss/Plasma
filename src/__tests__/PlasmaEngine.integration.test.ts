@@ -143,10 +143,13 @@ function makePersona(overrides: Partial<PersonaDefinition> = {}): PersonaDefinit
   };
 }
 
+const messageCounter = { value: 0 };
+
 function makeMessage(overrides: Partial<Message> = {}): Message {
+  const counter = ++messageCounter.value;
   return {
-    id: 'msg-int-001',
-    conversationId: 'conv-int-001',
+    id: `msg-int-${counter.toString().padStart(3, '0')}`,
+    conversationId: `conv-int-${counter.toString().padStart(3, '0')}`,
     senderId: 'ceo-1',
     senderName: 'CEO',
     content: '지수씨, 오늘 스프린트 리뷰 준비됐나요?',

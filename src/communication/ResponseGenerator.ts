@@ -11,7 +11,9 @@ import { PromptBuilder, PromptContext } from '../llm/PromptBuilder';
 import { MCPClient } from '../mcp/MCPClient';
 import { Logger, LogLevel } from '../utils/Logger';
 
-const MAX_TOOL_ROUNDS = 8; // prevent infinite agentic loops
+const MAX_TOOL_ROUNDS = 3;
+const HISTORY_CONTEXT_SIZE = 6;
+const MIN_REQUEST_DELAY_MS = 200;
 
 export interface GenerateOptions {
   /** Override the list of tools available for this call */
@@ -61,7 +63,6 @@ export class ResponseGenerator {
 
     const systemPrompt = this.promptBuilder.buildSystemPrompt(promptCtx);
 
-    // Build conversation history for the LLM
     const history = buildLLMHistory(conversation, incomingMessage);
 
     this.log.debug('Starting generation', { messageId: incomingMessage.id });
@@ -70,11 +71,14 @@ export class ResponseGenerator {
     let totalTokens = 0;
     let round = 0;
 
-    // ── Agentic loop ──────────────────────────────────────────────────────
     const messages: LLMMessage[] = [...history];
 
     while (round < MAX_TOOL_ROUNDS) {
       round++;
+
+      if (round > 1) {
+        await new Promise(r => setTimeout(r, MIN_REQUEST_DELAY_MS));
+      }
 
       const llmResponse = await this.llm.chat(messages, tools.length ? tools : undefined, systemPrompt);
       totalTokens += llmResponse.usage?.promptTokens ?? 0;
@@ -85,15 +89,12 @@ export class ResponseGenerator {
         toolCalls: llmResponse.toolCalls?.map((t) => t.name),
       });
 
-      // No tool calls — we have the final answer
       if (!llmResponse.toolCalls || llmResponse.toolCalls.length === 0) {
         const finalText = llmResponse.content.trim();
         this.log.info(`Generated response (${totalTokens} tokens, ${round} round(s))`);
         return { response: finalText, toolResultLog, totalTokensUsed: totalTokens };
       }
 
-      // ── Execute tool calls ──────────────────────────────────────────────
-      // Add assistant turn with tool calls
       if (llmResponse.content) {
         messages.push({ role: 'assistant', content: llmResponse.content });
       }
@@ -103,16 +104,13 @@ export class ResponseGenerator {
         const result = await this.mcpClient.execute(tc.name, tc.arguments);
         toolResultLog.push(result);
 
-        // Feed tool result back as a user message.
-        // Framed as internal context, not as a "tool call", so the LLM
-        // incorporates it naturally without narrating the lookup.
         const resultContent = result.isError
           ? `(unavailable: ${result.errorMessage})`
-          : JSON.stringify(result.result, null, 2);
+          : JSON.stringify(result.result).slice(0, 300);
 
         messages.push({
           role: 'user',
-          content: `[Internal context — ${tc.name}]:\n${resultContent}\n(Use this naturally. Do not reference this lookup in your reply.)`,
+          content: `[${tc.name}]: ${resultContent}`,
         });
       }
     }

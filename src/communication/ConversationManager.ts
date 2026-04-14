@@ -2,22 +2,12 @@ import { v4 as uuidv4 } from 'uuid';
 import { ConversationContext, Message } from '../types';
 
 const MAX_HISTORY_PER_CONVERSATION = 100;
+const CONVERSATION_END_IDLE_MS = 10 * 60 * 1000;
+const MIN_MESSAGES_FOR_END_DETECTION = 4;
 
-/**
- * Manages in-memory conversation state for a single persona.
- *
- * The game engine feeds messages via `addMessage()` and can retrieve
- * full conversation context via `getConversation()`.
- */
 export class ConversationManager {
   private readonly conversations = new Map<string, ConversationContext>();
 
-  // ─── Message ingestion ────────────────────────────────────────────────────
-
-  /**
-   * Record an incoming (or outgoing) message.
-   * Creates the conversation if it doesn't exist yet.
-   */
   addMessage(message: Message): ConversationContext {
     let conv = this.conversations.get(message.conversationId);
 
@@ -27,7 +17,6 @@ export class ConversationManager {
 
     conv.messages.push(message);
 
-    // Keep memory bounded
     if (conv.messages.length > MAX_HISTORY_PER_CONVERSATION) {
       conv.messages.splice(0, conv.messages.length - MAX_HISTORY_PER_CONVERSATION);
     }
@@ -37,7 +26,6 @@ export class ConversationManager {
       conv.participants.push(message.senderId);
     }
 
-    // Heuristic topic detection from first few messages
     if (!conv.topic && conv.messages.length <= 3) {
       conv.topic = extractTopic(message.content);
     }
@@ -45,9 +33,6 @@ export class ConversationManager {
     return conv;
   }
 
-  /**
-   * Open a new direct-message or group conversation explicitly.
-   */
   openConversation(params: {
     id?: string;
     participants: string[];
@@ -63,12 +48,77 @@ export class ConversationManager {
       messages: [],
       startedAt: Date.now(),
       lastActivityAt: Date.now(),
+      respondingPlasmaIds: [],
     };
     this.conversations.set(id, conv);
     return conv;
   }
 
-  // ─── Queries ──────────────────────────────────────────────────────────────
+  markResponding(conversationId: string, plasmaId: string): void {
+    const conv = this.conversations.get(conversationId);
+    if (conv && !conv.respondingPlasmaIds.includes(plasmaId)) {
+      conv.respondingPlasmaIds.push(plasmaId);
+    }
+  }
+
+  markResponseDone(conversationId: string, plasmaId: string): void {
+    const conv = this.conversations.get(conversationId);
+    if (conv) {
+      conv.respondingPlasmaIds = conv.respondingPlasmaIds.filter(id => id !== plasmaId);
+      conv.lastPlasmaResponseAt = Date.now();
+    }
+  }
+
+  isPlasmaResponding(conversationId: string, plasmaId: string): boolean {
+    const conv = this.conversations.get(conversationId);
+    return conv?.respondingPlasmaIds.includes(plasmaId) ?? false;
+  }
+
+  hasOtherPlasmaResponding(conversationId: string, excludePlasmaId: string): boolean {
+    const conv = this.conversations.get(conversationId);
+    if (!conv) return false;
+    return conv.respondingPlasmaIds.some(id => id !== excludePlasmaId);
+  }
+
+  shouldEndConversation(conversationId: string): { shouldEnd: boolean; reason: string } {
+    const conv = this.conversations.get(conversationId);
+    if (!conv) return { shouldEnd: false, reason: '' };
+
+    if (conv.messages.length < MIN_MESSAGES_FOR_END_DETECTION) {
+      return { shouldEnd: false, reason: '' };
+    }
+
+    const now = Date.now();
+    const lastActivityAge = now - conv.lastActivityAt;
+    if (lastActivityAge > CONVERSATION_END_IDLE_MS) {
+      return { shouldEnd: true, reason: 'Conversation has been idle too long' };
+    }
+
+    const lastTwo = conv.messages.slice(-2);
+    if (lastTwo.length === 2) {
+      const allPlasma = lastTwo.every(m => !m.isDirectMessage || m.senderId !== conv.participants[0]);
+      const bothShort = lastTwo.every(m => m.content.trim().length < 20);
+      if (allPlasma && bothShort) {
+        return { shouldEnd: true, reason: 'Exchange has naturally concluded' };
+      }
+    }
+
+    if (conv.lastPlasmaResponseAt) {
+      const timeSinceLastResponse = now - conv.lastPlasmaResponseAt;
+      if (timeSinceLastResponse > 5 * 60 * 1000) {
+        return { shouldEnd: true, reason: 'No recent engagement from participants' };
+      }
+    }
+
+    return { shouldEnd: false, reason: '' };
+  }
+
+  endConversation(conversationId: string): void {
+    const conv = this.conversations.get(conversationId);
+    if (conv) {
+      conv.respondingPlasmaIds = [];
+    }
+  }
 
   getConversation(id: string): ConversationContext | null {
     return this.conversations.get(id) ?? null;
@@ -83,16 +133,11 @@ export class ConversationManager {
     return this.getAllConversations().filter((c) => c.lastActivityAt >= cutoff);
   }
 
-  /**
-   * Return the last `n` messages from a conversation, oldest first.
-   */
   getRecentMessages(conversationId: string, n = 10): Message[] {
     const conv = this.conversations.get(conversationId);
     if (!conv) return [];
     return conv.messages.slice(-n);
   }
-
-  // ─── Private ──────────────────────────────────────────────────────────────
 
   private createConversation(seed: Message): ConversationContext {
     const conv: ConversationContext = {
@@ -102,6 +147,7 @@ export class ConversationManager {
       messages: [],
       startedAt: seed.timestamp,
       lastActivityAt: seed.timestamp,
+      respondingPlasmaIds: [],
     };
     this.conversations.set(seed.conversationId, conv);
     return conv;

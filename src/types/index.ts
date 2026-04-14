@@ -240,6 +240,10 @@ export interface ConversationContext {
   startedAt: number;
   lastActivityAt: number;
   isGroupChat: boolean;
+  /** Tracks which plasma instances are currently generating a response */
+  respondingPlasmaIds: string[];
+  /** Timestamp of last plasma response, used for conversation ending detection */
+  lastPlasmaResponseAt?: number;
 }
 
 // ─── ENGAGEMENT DECISION ─────────────────────────────────────────────────────

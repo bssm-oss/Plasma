@@ -209,6 +209,12 @@ export class PromptBuilder {
       `what their brain is doing. Do the same.`,
       `Write like a person texting or messaging a colleague — plain sentences, no markdown, no bullet points, ` +
       `no tables, no headers. If you need to list things, just say them naturally in a sentence or two.`,
+      `IMPORTANT: Do NOT start conversations with greetings like "감사합니다", "감사합니다!", "Thanks!", "Hello", ` +
+      `"Nice to meet you", or similar polite openings. Just respond naturally to the message content itself. ` +
+      `If someone greets you first, respond briefly and move to the actual topic.`,
+      `IMPORTANT: Keep responses appropriate length. Do NOT overly repeat yourself or continue a conversation ` +
+      `when it has naturally ended. If the topic is resolved or the other person has stopped engaging, ` +
+      `end the conversation naturally without adding unnecessary follow-ups.`,
     ].join('\n');
   }
 }
